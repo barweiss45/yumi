@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 base_instructions = dedent(
     """\
@@ -15,5 +15,9 @@ base_query = dedent(
 )
 
 GENERAL_PROMPT = ChatPromptTemplate.from_messages(
-    [("system", base_instructions), ("user", base_query)]
+    [
+        ("system", base_instructions),
+        MessagesPlaceholder(variable_name="history"),
+        ("user", base_query),
+    ]
 )

@@ -1,15 +1,17 @@
 import os
 from textwrap import dedent
+import logging
 
 import discord
 from dotenv import load_dotenv
 
 from api_functions import get_weather
-from llm import basic_convo
+from llm import with_message_history
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+logger = logging.getLogger(__name__)
 
 
 class YumiClient(discord.Client):
@@ -35,9 +37,20 @@ class YumiClient(discord.Client):
                     )
                 )
 
+        elif message.attachments is not []:
+            logger.debug(
+                f"Received file: {[file.filename for file in message.attachments]}"
+            )
+            await message.channel.send(
+                f"Received file: {[file.filename for file in message.attachments]}"
+            )
+
         else:
             async with message.channel.typing():
-                response = basic_convo.ainvoke({"query": message.content})
+                response = with_message_history.ainvoke(
+                    {"query": message.content},
+                    config={"configurable": {"session_id": "def234"}},
+                )
                 await message.channel.send(await response)
 
 

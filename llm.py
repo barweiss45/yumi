@@ -2,17 +2,24 @@ import os
 
 from dotenv import load_dotenv
 from langchain.schema.output_parser import StrOutputParser
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.globals import set_debug
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
 from langchain_openai import ChatOpenAI
 
 from prompts.gen_prompts import GENERAL_PROMPT
 
+set_debug(True)
 load_dotenv()
 
 google_api_key = os.getenv("GOOGLE_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
 mistralai_api_key = os.getenv("MISTRALAI_API_KEY")
+
+memory_store = {}
 
 gemini_llm = ChatGoogleGenerativeAI(
     google_api_key=f"{google_api_key}",
@@ -22,3 +29,17 @@ mistral_llm = ChatMistralAI(model="mistral-large-latest")
 openai_llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4")
 
 basic_convo = GENERAL_PROMPT | openai_llm | StrOutputParser()
+
+
+def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    if session_id not in memory_store:
+        memory_store[session_id] = ChatMessageHistory()
+    return memory_store[session_id]
+
+
+with_message_history = RunnableWithMessageHistory(
+    basic_convo,
+    get_session_history,
+    input_messages_key="query",
+    history_messages_key="history",
+)
