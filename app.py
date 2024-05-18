@@ -36,27 +36,30 @@ class YumiClient(discord.Client):
 
         elif len(message.attachments) > 0:
             yumi_logger.info("Uploading Attachments to Pinecone")
-            pincone_response = await load_pdfs_to_pinecone(
+            response = await load_pdfs_to_pinecone(
                 attachments=message.attachments, index_name="yumi-test-1"
             )  # Future: message.content
-            await message.channel.send(pincone_response)
 
         elif message.content.startswith("!rag "):
-            yumi_logger.debug("-->Starting RAG Conversation<--")
+            yumi_logger.debug("--> Starting RAG Conversation <--")
             async with message.channel.typing():
-                response = basic_rag_conversation(
+                response = await basic_rag_conversation(
                     query=message.content[5:],
                     config={"configurable": {"session_id": "abc123"}},
                 )
-                await message.channel.send(await response)
 
         else:
             async with message.channel.typing():
-                response = baisc_conversation().ainvoke(
+                yumi_logger.debug("--> Starting Basic Conversation <--")
+                response = await baisc_conversation().ainvoke(
                     {"query": message.content},
                     config={"configurable": {"session_id": "abc123"}},
                 )
-                await message.channel.send(await response)
+
+        # Send the response in chunks of 2000 characters due character limit
+        i = 0
+        for i in range(0, len(response), 2000):
+            await message.channel.send(response[i : i + 2000])  # noqa: E203
 
 
 intents = discord.Intents.default()
