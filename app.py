@@ -1,24 +1,20 @@
-import logging
-import os
 from textwrap import dedent
 
 import discord
-from dotenv import load_dotenv
 
 from api_functions import get_weather
+from config import Config, yumi_logger
 from llm import baisc_conversation, basic_rag_conversation
 from rag_pinecone import load_pdfs_to_pinecone
 
-load_dotenv()
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-logger = logging.getLogger(__name__)
+configs = Config()
 
 
 class YumiClient(discord.Client):
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print("------")
+        yumi_logger.info("Logged in as %s (ID: %s)", self.user, self.user.id)
 
     async def on_message(self, message):
         if message.author == self.user:
@@ -39,15 +35,14 @@ class YumiClient(discord.Client):
                 )
 
         elif len(message.attachments) > 0:
-            logger.debug(
-                f"Received file: {[file.filename for file in message.attachments]}"
-            )
+            yumi_logger.info("Uploading Attachments to Pinecone")
             pincone_response = await load_pdfs_to_pinecone(
                 attachments=message.attachments, index_name="yumi-test-1"
             )  # Future: message.content
             await message.channel.send(pincone_response)
 
         elif message.content.startswith("!rag "):
+            yumi_logger.debug("-->Starting RAG Conversation<--")
             async with message.channel.typing():
                 response = basic_rag_conversation(
                     query=message.content[5:],
@@ -69,4 +64,4 @@ intents.message_content = True
 intents.typing = True
 
 client = YumiClient(intents=intents)
-client.run(BOT_TOKEN)
+client.run(configs.BOT_TOKEN)

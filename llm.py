@@ -1,11 +1,9 @@
 import os
 from typing import Any, Dict
 
-from dotenv import load_dotenv
 from langchain.schema.output_parser import StrOutputParser
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.globals import set_debug
 from langchain_core.runnables import (
     RunnableLambda,
     RunnablePassthrough,
@@ -18,9 +16,6 @@ from langchain_openai import ChatOpenAI
 
 from prompts.gen_prompts import GENERAL_PROMPT, RAG_PROMPT
 from rag_pinecone import basic_retriever
-
-set_debug(True)
-load_dotenv()
 
 google_api_key = os.getenv("GOOGLE_API_KEY")
 openai_api_key = os.getenv("OPENAI_API_KEY")
