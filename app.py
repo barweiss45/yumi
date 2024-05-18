@@ -54,7 +54,7 @@ class YumiClient(discord.Client):
             async with message.channel.typing():
                 response = baisc_conversation().ainvoke(
                     {"query": message.content},
-                    config={"configurable": {"session_id": "def234"}},
+                    config={"configurable": {"session_id": "abc123"}},
                 )
                 await message.channel.send(await response)
 

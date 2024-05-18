@@ -23,8 +23,9 @@ async def basic_retriever(
     query: str,
     index_name: str = index_name,
 ) -> List[Document]:
-    retriever = await vectorstore(index_name).asimilarity_search(query=query)
-    return retriever
+    docs = await vectorstore(index_name).asimilarity_search(query=query)
+    documents = [doc.page_content for doc in docs]
+    return documents
 
 
 async def load_pdfs_to_pinecone(attachments: List[str], index_name: str = index_name):
