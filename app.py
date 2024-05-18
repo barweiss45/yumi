@@ -1,12 +1,13 @@
+import logging
 import os
 from textwrap import dedent
-import logging
 
 import discord
 from dotenv import load_dotenv
 
 from api_functions import get_weather
-from llm import with_message_history
+from llm import baisc_conversation, basic_rag_conversation
+from rag_pinecone import load_pdfs_to_pinecone
 
 load_dotenv()
 
@@ -37,17 +38,26 @@ class YumiClient(discord.Client):
                     )
                 )
 
-        elif message.attachments is not []:
+        elif len(message.attachments) > 0:
             logger.debug(
                 f"Received file: {[file.filename for file in message.attachments]}"
             )
-            await message.channel.send(
-                f"Received file: {[file.filename for file in message.attachments]}"
-            )
+            pincone_response = await load_pdfs_to_pinecone(
+                attachments=message.attachments, index_name="yumi-test-1"
+            )  # Future: message.content
+            await message.channel.send(pincone_response)
+
+        elif message.content.startswith("!rag "):
+            async with message.channel.typing():
+                response = basic_rag_conversation(
+                    query=message.content[5:],
+                    config={"configurable": {"session_id": "abc123"}},
+                )
+                await message.channel.send(await response)
 
         else:
             async with message.channel.typing():
-                response = with_message_history.ainvoke(
+                response = baisc_conversation().ainvoke(
                     {"query": message.content},
                     config={"configurable": {"session_id": "def234"}},
                 )
