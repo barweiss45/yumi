@@ -1,9 +1,12 @@
-import os
 from typing import Any, Dict
 
+import tiktoken
 from langchain.schema.output_parser import StrOutputParser
 from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.chat_history import (
+    BaseChatMessageHistory,
+    InMemoryChatMessageHistory,
+)
 from langchain_core.runnables import (
     RunnableLambda,
     RunnablePassthrough,
@@ -14,12 +17,15 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
 from langchain_openai import ChatOpenAI
 
-from prompts.gen_prompts import GENERAL_PROMPT, RAG_PROMPT
+from config import Config, yumi_logger
+from prompts.gen_prompts import GENERAL_PROMPT, MEMORY_SUMMARIZATION_PROMPT, RAG_PROMPT
 from rag_pinecone import basic_retriever
 
-google_api_key = os.getenv("GOOGLE_API_KEY")
-openai_api_key = os.getenv("OPENAI_API_KEY")
-mistralai_api_key = os.getenv("MISTRALAI_API_KEY")
+configs = Config()
+
+google_api_key = configs.google_api_key
+openai_api_key = configs.openai_api_key
+mistralai_api_key = configs.mistralai_api_key
 
 memory_store = {}
 
@@ -31,10 +37,54 @@ mistral_llm = ChatMistralAI(model="mistral-large-latest")
 openai_llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4o")
 
 
+def summarize_memory(
+    stored_session: InMemoryChatMessageHistory,
+) -> InMemoryChatMessageHistory:
+    summarization_chain = (MEMORY_SUMMARIZATION_PROMPT | gemini_llm).with_config(
+        config={"run_name": "sumarize_memory"}
+    )
+    summary_message = summarization_chain.invoke({"history": stored_session.messages})
+    stored_session.clear()
+    stored_session.add_message(summary_message)
+    yumi_logger.info("summarize_memory - Memory summarization complete.")
+    return stored_session
+
+
+def check_memory_token_size(messages: BaseChatMessageHistory) -> bool:
+    yumi_logger.info("check_memory_token_size - Checking token size of memory.")
+    encoding = tiktoken.get_encoding("cl100k_base")
+    count = []
+    for message in messages:
+        token_count = len(encoding.encode(message.content))
+        count.append(token_count)
+    total_tokens = sum(count)
+    if total_tokens > 500:
+        yumi_logger.info(
+            "check_memory_token_size - History token size exceeded: %s Tokens.",
+            total_tokens,
+        )
+        return True
+    else:
+        yumi_logger.info(
+            "check_memory_token_size - History token size: %s Tokens.", total_tokens
+        )
+        return False
+
+
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
     if session_id not in memory_store:
+        yumi_logger.debug("get_session_history - Creating new session history.")
         memory_store[session_id] = ChatMessageHistory()
-    return memory_store[session_id]
+        return memory_store[session_id]
+    stored_session: InMemoryChatMessageHistory = memory_store[session_id]
+    if len(stored_session.messages) > 6:
+        yumi_logger.debug(
+            "get_session_history - stored_session exceeds 6 messages. \
+                Checking Token Size..."
+        )
+        if check_memory_token_size(stored_session.messages):
+            return summarize_memory(stored_session)
+    return stored_session
 
 
 def baisc_conversation() -> RunnableWithMessageHistory:
