@@ -40,8 +40,17 @@ openai_llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4o")
 def summarize_memory(
     stored_session: InMemoryChatMessageHistory,
 ) -> InMemoryChatMessageHistory:
+    """
+    Summarizes the memory of a chat session.
+
+    Args:
+        stored_session (InMemoryChatMessageHistory): The chat session to be summarized.
+
+    Returns:
+        InMemoryChatMessageHistory: The chat session with the summary message added.
+    """
     summarization_chain = (MEMORY_SUMMARIZATION_PROMPT | gemini_llm).with_config(
-        config={"run_name": "sumarize_memory"}
+        config={"run_name": "summarize_memory"}
     )
     summary_message = summarization_chain.invoke({"history": stored_session.messages})
     stored_session.clear()
@@ -51,6 +60,15 @@ def summarize_memory(
 
 
 def check_memory_token_size(messages: BaseChatMessageHistory) -> bool:
+    """
+    Check the token size of the memory.
+
+    Args:
+        messages (BaseChatMessageHistory): The chat message history.
+
+    Returns:
+        bool: True if the total token size exceeds 500, False otherwise.
+    """
     yumi_logger.info("check_memory_token_size - Checking token size of memory.")
     encoding = tiktoken.get_encoding("cl100k_base")
     count = []
