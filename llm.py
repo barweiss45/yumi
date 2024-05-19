@@ -72,6 +72,16 @@ def check_memory_token_size(messages: BaseChatMessageHistory) -> bool:
 
 
 def get_session_history(session_id: str) -> BaseChatMessageHistory:
+    """
+    Retrieve the chat message history for a given session ID.
+
+    Args:
+        session_id (str): The ID of the session.
+
+    Returns:
+        BaseChatMessageHistory: The chat message history for the session.
+
+    """
     if session_id not in memory_store:
         yumi_logger.debug("get_session_history - Creating new session history.")
         memory_store[session_id] = ChatMessageHistory()
