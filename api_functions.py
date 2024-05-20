@@ -1,18 +1,19 @@
-import os
+from typing import Any, Dict
 
 import requests
-from dotenv import load_dotenv
 
-load_dotenv()
+from config import Config
 
-WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
+configs = Config()
+
+WEATHER_API_KEY = configs.WEATHER_API_KEY
 
 weather_api_url = "https://api.openweathermap.org/data/2.5/weather"
 
 
-def get_current_weather(city: str, units: str = "imperial") -> dict:
-    if units not in ["imperial", "metric", "standard"]:
-        raise ValueError("units must be either 'imperial' or 'metric'")
-    url = f"{weather_api_url}?q={city}&units={units}&appid={WEATHER_API_KEY}"
+def get_current_weather(weather_api: Dict[str, Any]) -> Dict[str, Any]:
+    api_data = weather_api.get("weather_api")
+    url = f"{weather_api_url}?q={api_data.city}&units={api_data.units}&appid={WEATHER_API_KEY}"  # noqa
     response = requests.get(url)
+    response.raise_for_status()
     return response.json()

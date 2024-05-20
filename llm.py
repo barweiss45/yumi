@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Coroutine, Dict
 
 import tiktoken
 from langchain.schema.output_parser import StrOutputParser
@@ -7,18 +7,20 @@ from langchain_core.chat_history import (
     BaseChatMessageHistory,
     InMemoryChatMessageHistory,
 )
-from langchain_core.runnables import (
-    RunnableLambda,
-    RunnablePassthrough,
-    RunnableSerializable,
-)
+from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
 from langchain_openai import ChatOpenAI
 
+from api_functions import get_current_weather
 from config import Config, yumi_logger
+from models.weather_api import WeatherLookup
 from prompts.gen_prompts import GENERAL_PROMPT, MEMORY_SUMMARIZATION_PROMPT, RAG_PROMPT
+from prompts.structured_output import (
+    GET_WEATHER_API_PROMPT,
+    GET_WEATHER_GENERATIVE_PROMPT,
+)
 from rag_pinecone import basic_retriever
 
 configs = Config()
@@ -115,7 +117,9 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
     return stored_session
 
 
-def baisc_conversation() -> RunnableWithMessageHistory:
+async def baisc_conversation(
+    query: Dict[str, str], config: Dict[str, Dict[str, Any]]
+) -> Coroutine[Any, Any, Any]:
     basic_convo = GENERAL_PROMPT | openai_llm | StrOutputParser()
     with_message_history = RunnableWithMessageHistory(
         basic_convo,
@@ -123,12 +127,14 @@ def baisc_conversation() -> RunnableWithMessageHistory:
         input_messages_key="query",
         history_messages_key="history",
     )
-    return with_message_history
+    config["run_name"] = "basic_conversation"
+    response = await with_message_history.ainvoke(query, config)
+    return response
 
 
 async def basic_rag_conversation(
-    query: str, config: Dict[str, Dict[str, Any]]
-) -> RunnableSerializable:
+    query: Dict[str, str], config: Dict[str, Dict[str, Any]]
+) -> Coroutine[Any, Any, Any]:
     basic_convo = RAG_PROMPT | openai_llm | StrOutputParser()
     with_message_history = RunnableWithMessageHistory(
         basic_convo,
@@ -142,5 +148,34 @@ async def basic_rag_conversation(
         | with_message_history
         | StrOutputParser()
     )
-    response = await chain.ainvoke(query, config)
+    config["run_name"] = "basic_rag_conversation"
+    response = await chain.ainvoke(query["query"], config)
+    return response
+
+
+async def get_weather(query: str, config: Dict[str, Any]) -> Coroutine[Any, Any, Any]:
+    yumi_logger.info("get_weather - Getting weather information.")
+    get_location_chain = {
+        "weather_api": (
+            GET_WEATHER_API_PROMPT | openai_llm.with_structured_output(WeatherLookup)
+        )
+    } | RunnableLambda(get_current_weather)
+
+    get_weather_generative = (
+        GET_WEATHER_GENERATIVE_PROMPT | openai_llm | StrOutputParser()
+    )
+
+    weather_chain = {
+        "weather_api_response": get_location_chain,
+    } | get_weather_generative
+    yumi_logger.info("get_weather - Generating weather report.")
+
+    weather_chain_with_memory = RunnableWithMessageHistory(
+        weather_chain,
+        get_session_history,
+        input_messages_key="query",
+        history_messages_key="history",
+    )
+    config["run_name"] = "get_weather"
+    response = await weather_chain_with_memory.ainvoke(query, config)
     return response

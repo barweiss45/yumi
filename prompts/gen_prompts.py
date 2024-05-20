@@ -1,7 +1,8 @@
-from datetime import datetime
 from textwrap import dedent
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
+from util import get_current_time
 
 base_instructions = dedent(
     """\
@@ -30,7 +31,7 @@ summarize_memory = dedent(
                 But be sure that it is done in a way that is concise and easy
                 to understand as it will be used to summarize the chat history
                 and used as reference later by the AI. Please also that this
-                request was made on {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}.
+                request was made on {get_current_time()}.
                 """
 )
 
