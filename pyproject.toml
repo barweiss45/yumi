@@ -23,6 +23,7 @@ langchain-community = "^0.2.0"
 pymupdf = "^1.24.4"
 isort = "^5.13.2"
 langgraph = "^0.0.52"
+langchain-pinecone = "^0.1.1"
 
 
 [tool.poetry.group.dev.dependencies]
