@@ -7,11 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "3.11.9"
-flake8 = "^7.0.0"
-black = "^24.4.0"
 python-dotenv = "^1.0.1"
 requests = "^2.31.0"
-mypy = "^1.9.0"
 langchain = "^0.2.0"
 langchain-google-genai = "^1.0.2"
 langchain-mistralai = "^0.1.2"
@@ -29,17 +26,10 @@ discord-py = "^2.3.2"
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.7.0"
 tox = "^4.15.0"
+flake8 = "^7.0.0"
+black = "^24.4.0"
+mypy = "^1.9.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.mypy]
-ignore_errors = true
-
-[[tool.mypy.overrides]]
-module = [
-    "discord",
-    "discord.ext.commands",
-]
-ignore_missing_imports = true
