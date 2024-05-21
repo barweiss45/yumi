@@ -30,7 +30,7 @@ RUN pip install poetry
 COPY pyproject.toml poetry.lock ./
 
 # Use Docker cache to install dependencies
-RUN --mount=type=cache,target=/root/.cache/pip poetry install --no-root
+RUN --mount=type=cache,target=/root/.cache/pypoetry poetry install --no-root
 
 # Switch to the non-privileged user to run the application.
 USER appuser
