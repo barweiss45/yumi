@@ -7,12 +7,12 @@ from langchain_core.globals import set_debug
 load_dotenv()
 set_debug(True)
 
-yumi_logger = logging.getLogger(__name__)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-console_handler.setFormatter(formatter)
-yumi_logger.addHandler(console_handler)
+yumi_logger = logging.getLogger("Yumi")
+# console_handler = logging.StreamHandler()
+# console_handler.setLevel(logging.DEBUG)
+# formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+# console_handler.setFormatter(formatter)
+# yumi_logger.addHandler(console_handler)
 yumi_logger.setLevel(logging.DEBUG)
 
 

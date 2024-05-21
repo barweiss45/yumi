@@ -11,9 +11,9 @@ class YumiClient(discord.Client):
     """Yumi Discord Client Class"""
 
     async def on_ready(self):
-        print(f"Logged in as {self.user} (ID: {self.user.id})")
-        print("------")
-        yumi_logger.info("Logged in as %s (ID: %s)", self.user, self.user.id)
+        yumi_logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
+        yumi_logger.info("------")
+        yumi_logger.info(f"Application Info: {await self.application_info()}")
 
     async def on_message(self, message):
         llm_action = None
@@ -54,4 +54,4 @@ intents.message_content = True
 intents.typing = True
 
 client = YumiClient(intents=intents)
-client.run(configs.BOT_TOKEN)
+client.run(configs.BOT_TOKEN, root_logger=True)
