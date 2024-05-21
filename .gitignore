@@ -152,10 +152,6 @@ Makefile
 # but you can change it with the virtualenvs.in-project setting
 # Poetry cache
 /.cache/
-# .cache is where Poetry installs package dependencies by default
-# but you can change it with the cache-dir setting in the Poetry config file
-# Poetry lock file (https://python-poetry.org/docs/lock-file/)
-poetry.lock
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 # End of https://www.toptal.com/developers/gitignore/api/python
