@@ -9,7 +9,6 @@ readme = "README.md"
 python = "3.11.9"
 flake8 = "^7.0.0"
 black = "^24.4.0"
-discord-py = "^2.3.2"
 python-dotenv = "^1.0.1"
 requests = "^2.31.0"
 mypy = "^1.9.0"
@@ -24,6 +23,7 @@ pymupdf = "^1.24.4"
 isort = "^5.13.2"
 langgraph = "^0.0.52"
 langchain-pinecone = "^0.1.1"
+discord-py = "^2.3.2"
 
 
 [tool.poetry.group.dev.dependencies]
