@@ -8,6 +8,7 @@ load_dotenv()
 set_debug(True)
 
 yumi_logger = logging.getLogger("Yumi")
+# Set Discord root_looger to True will use Discord streammer
 # console_handler = logging.StreamHandler()
 # console_handler.setLevel(logging.DEBUG)
 # formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
