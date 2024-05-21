@@ -153,7 +153,11 @@ async def basic_rag_conversation(
     return response
 
 
-async def get_weather(query: str, config: Dict[str, Any]) -> Coroutine[Any, Any, Any]:
+async def get_weather(
+    query: Dict[str, str], config: Dict[str, Any]
+) -> Coroutine[Any, Any, Any]:
+    """Retrieves the weather information for a given location."""
+
     yumi_logger.info("get_weather - Getting weather information.")
     get_location_chain = {
         "weather_api": (
