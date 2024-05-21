@@ -8,6 +8,8 @@ configs = Config()
 
 
 class YumiClient(discord.Client):
+    """Yumi Discord Client Class"""
+
     async def on_ready(self):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print("------")
