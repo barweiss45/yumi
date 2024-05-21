@@ -39,4 +39,4 @@ COPY . .
 
 # Run the application.
 #CMD ["python", "app.py"]
-CMD ["poetry", "run", "python", "app.py"]
+CMD ["python", "app.py"]
