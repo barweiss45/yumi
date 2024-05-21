@@ -6,7 +6,7 @@ authors = ["barweiss"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.11.8"
+python = "3.11.9"
 flake8 = "^7.0.0"
 black = "^24.4.0"
 discord-py = "^2.3.2"
