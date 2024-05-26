@@ -1,6 +1,11 @@
 # Ignore all documents in received files
 received_files/**
 
+# Ignore Sqlite files
+*.sqlite3
+*.sqlite
+*.sqlite-*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

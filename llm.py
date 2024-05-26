@@ -1,17 +1,23 @@
-from typing import Any, Coroutine, Dict
+from typing import Annotated, Any, Coroutine, Dict, List
 
 import tiktoken
 from langchain.schema.output_parser import StrOutputParser
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.chat_history import (
-    BaseChatMessageHistory,
-    InMemoryChatMessageHistory,
+from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
+from langchain_core.messages import BaseMessage
+from langchain_core.runnables import (
+    Runnable,
+    RunnableConfig,
+    RunnableLambda,
+    RunnablePassthrough,
 )
-from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
 from langchain_openai import ChatOpenAI
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import StateGraph
+from langgraph.graph.message import add_messages
+from typing_extensions import TypedDict
 
 from api_functions import get_current_weather
 from config import Config, yumi_logger
@@ -25,23 +31,20 @@ from rag_pinecone import basic_retriever
 
 configs = Config()
 
-google_api_key = configs.google_api_key
-openai_api_key = configs.openai_api_key
 mistralai_api_key = configs.mistralai_api_key
 
-memory_store = {}
+memory_store: Dict[str, ChatMessageHistory] = {}
 
 gemini_llm = ChatGoogleGenerativeAI(
-    google_api_key=f"{google_api_key}",
     model="gemini-pro",
-)  # Type: Ignore
+)
 mistral_llm = ChatMistralAI(model="mistral-large-latest")
-openai_llm = ChatOpenAI(openai_api_key=openai_api_key, model="gpt-4o")
+openai_llm = ChatOpenAI(model="gpt-4o")
 
 
 def summarize_memory(
-    stored_session: InMemoryChatMessageHistory,
-) -> InMemoryChatMessageHistory:
+    stored_session: ChatMessageHistory,
+) -> ChatMessageHistory:
     """
     Summarizes the memory of a chat session.
 
@@ -61,12 +64,12 @@ def summarize_memory(
     return stored_session
 
 
-def check_memory_token_size(messages: BaseChatMessageHistory) -> bool:
+def check_memory_token_size(messages: ChatMessageHistory) -> bool:
     """
     Check the token size of the memory.
 
     Args:
-        messages (BaseChatMessageHistory): The chat message history.
+        messages (List[BaseMessage]): The chat message history.
 
     Returns:
         bool: True if the total token size exceeds 500, False otherwise.
@@ -91,7 +94,9 @@ def check_memory_token_size(messages: BaseChatMessageHistory) -> bool:
         return False
 
 
-def get_session_history(session_id: str) -> BaseChatMessageHistory:
+def get_session_history(
+    session_id: str,
+) -> Dict[str, ChatMessageHistory] | ChatMessageHistory:
     """
     Retrieve the chat message history for a given session ID.
 
@@ -99,14 +104,14 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
         session_id (str): The ID of the session.
 
     Returns:
-        BaseChatMessageHistory: The chat message history for the session.
+        Dict[str, List[Basemessage]]: The chat message history for the session.
 
     """
     if session_id not in memory_store:
         yumi_logger.debug("get_session_history - Creating new session history.")
         memory_store[session_id] = ChatMessageHistory()
         return memory_store[session_id]
-    stored_session: InMemoryChatMessageHistory = memory_store[session_id]
+    stored_session: ChatMessageHistory = memory_store[session_id]
     if len(stored_session.messages) > 6:
         yumi_logger.debug(
             "get_session_history - stored_session exceeds 6 messages. \
@@ -118,9 +123,9 @@ def get_session_history(session_id: str) -> BaseChatMessageHistory:
 
 
 async def baisc_conversation(
-    query: Dict[str, str], config: Dict[str, Dict[str, Any]]
+    query: Dict[str, str], config: RunnableConfig
 ) -> Coroutine[Any, Any, Any]:
-    basic_convo = GENERAL_PROMPT | openai_llm | StrOutputParser()
+    basic_convo: Runnable = GENERAL_PROMPT | openai_llm | StrOutputParser()
     with_message_history = RunnableWithMessageHistory(
         basic_convo,
         get_session_history,
@@ -132,10 +137,8 @@ async def baisc_conversation(
     return response
 
 
-async def basic_rag_conversation(
-    query: Dict[str, str], config: Dict[str, Dict[str, Any]]
-) -> Coroutine[Any, Any, Any]:
-    basic_convo = RAG_PROMPT | openai_llm | StrOutputParser()
+async def basic_rag_conversation(query: Dict[str, str], config: RunnableConfig) -> str:
+    basic_convo: Runnable = RAG_PROMPT | openai_llm | StrOutputParser()
     with_message_history = RunnableWithMessageHistory(
         basic_convo,
         get_session_history,
@@ -154,12 +157,12 @@ async def basic_rag_conversation(
 
 
 async def get_weather(
-    query: Dict[str, str], config: Dict[str, Any]
+    query: Dict[str, str], config: RunnableConfig
 ) -> Coroutine[Any, Any, Any]:
     """Retrieves the weather information for a given location."""
 
     yumi_logger.info("get_weather - Getting weather information.")
-    get_location_chain = {
+    get_location_chain: Runnable = {
         "weather_api": (
             GET_WEATHER_API_PROMPT | openai_llm.with_structured_output(WeatherLookup)
         )
@@ -169,7 +172,7 @@ async def get_weather(
         GET_WEATHER_GENERATIVE_PROMPT | openai_llm | StrOutputParser()
     )
 
-    weather_chain = {
+    weather_chain: Runnable = {
         "weather_api_response": get_location_chain,
     } | get_weather_generative
     yumi_logger.info("get_weather - Generating weather report.")
@@ -183,3 +186,42 @@ async def get_weather(
     config["run_name"] = "get_weather"
     response = await weather_chain_with_memory.ainvoke(query, config)
     return response
+
+
+class State(TypedDict):
+    # Messages have the type "list". The `add_messages` function
+    # in the annotation defines how this state key should be updated
+    # (in this case, it appends messages to the list, rather than overwriting them)
+    messages: Annotated[list, add_messages]
+
+
+def configurable() -> Dict[str, Any]:
+    """Extract the session ID from the user input."""
+    config = {"configurable": {"thread_id": "1"}}
+    return config
+
+
+def chatbot(state: State) -> Dict[str, List[BaseMessage]]:
+    """Send a message to the chatbot and return the response."""
+    return {"messages": [openai_llm.invoke(state["messages"])]}
+
+
+memory = SqliteSaver.from_conn_string("checkpoint.sqlite")
+graph_builder = StateGraph(State)
+graph_builder.add_node("chatbot", chatbot)
+graph_builder.set_entry_point("chatbot")
+graph_builder.set_finish_point("chatbot")
+graph = graph_builder.compile(checkpointer=memory)
+
+if __name__ == "__main__":
+    while True:
+        user_input = input("User: ")
+        if user_input.lower() in ["quit", "exit", "q"]:
+            print("Goodbye!")
+            break
+        for event in graph.stream(
+            {"messages": ("user", user_input)},
+            config=configurable(),
+            stream_mode="values",
+        ):
+            print(f'Assistant: {event["messages"][-1].content}')
