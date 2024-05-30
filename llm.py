@@ -1,9 +1,8 @@
-from typing import Annotated, Any, Coroutine, Dict, List
+from typing import Any, Coroutine, Dict
 
 import tiktoken
 from langchain.schema.output_parser import StrOutputParser
 from langchain_community.chat_message_histories.in_memory import ChatMessageHistory
-from langchain_core.messages import BaseMessage
 from langchain_core.runnables import (
     Runnable,
     RunnableConfig,
@@ -14,10 +13,6 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_mistralai import ChatMistralAI
 from langchain_openai import ChatOpenAI
-from langgraph.checkpoint.sqlite import SqliteSaver
-from langgraph.graph import StateGraph
-from langgraph.graph.message import add_messages
-from typing_extensions import TypedDict
 
 from api_functions import get_current_weather
 from config import Config, yumi_logger
@@ -39,7 +34,7 @@ gemini_llm = ChatGoogleGenerativeAI(
     model="gemini-pro",
 )
 mistral_llm = ChatMistralAI(model="mistral-large-latest")
-openai_llm = ChatOpenAI(model="gpt-4o")
+openai_llm: ChatOpenAI = ChatOpenAI(model="gpt-4o")
 
 
 def summarize_memory(
@@ -188,40 +183,5 @@ async def get_weather(
     return response
 
 
-class State(TypedDict):
-    # Messages have the type "list". The `add_messages` function
-    # in the annotation defines how this state key should be updated
-    # (in this case, it appends messages to the list, rather than overwriting them)
-    messages: Annotated[list, add_messages]
-
-
-def configurable() -> Dict[str, Any]:
-    """Extract the session ID from the user input."""
-    config = {"configurable": {"thread_id": "1"}}
-    return config
-
-
-def chatbot(state: State) -> Dict[str, List[BaseMessage]]:
-    """Send a message to the chatbot and return the response."""
-    return {"messages": [openai_llm.invoke(state["messages"])]}
-
-
-memory = SqliteSaver.from_conn_string("checkpoint.sqlite")
-graph_builder = StateGraph(State)
-graph_builder.add_node("chatbot", chatbot)
-graph_builder.set_entry_point("chatbot")
-graph_builder.set_finish_point("chatbot")
-graph = graph_builder.compile(checkpointer=memory)
-
 if __name__ == "__main__":
-    while True:
-        user_input = input("User: ")
-        if user_input.lower() in ["quit", "exit", "q"]:
-            print("Goodbye!")
-            break
-        for event in graph.stream(
-            {"messages": ("user", user_input)},
-            config=configurable(),
-            stream_mode="values",
-        ):
-            print(f'Assistant: {event["messages"][-1].content}')
+    raise NotImplementedError("This module is not meant to be executed directly.")
