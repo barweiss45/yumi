@@ -1,7 +1,7 @@
 import discord
 
 from yumi.config import Config, yumi_logger
-from yumi.llm import baisc_conversation, basic_rag_conversation, get_weather
+from yumi.old_llm import baisc_conversation, basic_rag_conversation, get_weather
 from yumi.rag_pinecone import load_pdfs_to_pinecone
 
 configs = Config()
