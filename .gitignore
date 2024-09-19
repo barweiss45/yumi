@@ -1,3 +1,6 @@
+# Other file to ignore
+.vscode/
+
 # Ignore all documents in received files
 received_files/**
 
