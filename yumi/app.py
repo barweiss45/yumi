@@ -1,7 +1,7 @@
 import discord
 
 from yumi.config import Config, yumi_logger
-from yumi.old_llm import baisc_conversation, basic_rag_conversation, get_weather
+from yumi.llm import baisc_conversation
 from yumi.rag_pinecone import load_pdfs_to_pinecone
 
 configs = Config()
@@ -30,9 +30,10 @@ class YumiClient(discord.Client):
 
         match message.content:
             case _ if message.content.startswith("!weather "):
-                llm_action = get_weather
-            case _ if message.content.startswith("!rag "):
-                llm_action = basic_rag_conversation
+                # llm_action = get_weather
+                pass
+            # case _ if message.content.startswith("!rag "):
+            #     llm_action = basic_rag_conversation
             case _:
                 llm_action = baisc_conversation
 

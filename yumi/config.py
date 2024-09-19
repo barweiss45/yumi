@@ -2,10 +2,11 @@ import logging
 import os
 
 from dotenv import load_dotenv
-from langchain_core.globals import set_debug
+
+# from langchain_core.globals import set_debug
 
 load_dotenv()
-set_debug(True)
+# set_debug(True)
 
 yumi_logger = logging.getLogger("Yumi")
 # Set Discord root_looger to True will use Discord streammer
