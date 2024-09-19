@@ -12,6 +12,7 @@ requests = "^2.31.0"
 types-requests = "^2.31.0.20240406"
 isort = "^5.13.2"
 discord-py = "^2.3.2"
+ell-ai = "^0.0.5"
 
 
 [tool.poetry.group.dev.dependencies]
