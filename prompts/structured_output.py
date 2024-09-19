@@ -2,7 +2,7 @@ from textwrap import dedent
 
 from langchain_core.prompts import ChatPromptTemplate
 
-from util import get_current_time
+from yumi.util import get_current_time
 
 get_weather_api_template = dedent(
     """\
