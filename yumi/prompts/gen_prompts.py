@@ -1,7 +1,5 @@
 from textwrap import dedent
 
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-
 from yumi.util import get_current_time
 
 base_instructions = dedent(
@@ -12,7 +10,15 @@ base_instructions = dedent(
     you are modest and considerate.
     """
 )
-base_query = """{query}"""
+
+basic_convo_prompt = dedent(
+    """\
+    Use the following pieces of retrieved context to answer the question.
+    If you don't know the answer, just say that you don't know. Keep the
+    answer concise.
+    """
+)
+
 base_rag_query = dedent(
     """\
         Use the following pieces of retrieved context to answer the question.
@@ -33,30 +39,4 @@ summarize_memory = dedent(
                 and used as reference later by the AI. Please also that this
                 request was made on {get_current_time()}.
                 """
-)
-
-GENERAL_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        ("system", base_instructions),
-        MessagesPlaceholder(variable_name="history"),
-        ("user", base_query),
-    ]
-)
-
-RAG_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        ("system", base_instructions),
-        MessagesPlaceholder(variable_name="history"),
-        ("user", base_rag_query),
-    ]
-)
-
-MEMORY_SUMMARIZATION_PROMPT = ChatPromptTemplate.from_messages(
-    [
-        MessagesPlaceholder(variable_name="history"),
-        (
-            "user",
-            summarize_memory,
-        ),
-    ]
 )
