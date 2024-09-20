@@ -39,10 +39,7 @@ class YumiClient(discord.Client):
 
         if llm_action is not None:
             async with message.channel.typing():
-                response = await llm_action(
-                    {"query": message.content},
-                    config={"configurable": {"session_id": "abc123"}},
-                )
+                response = llm_action(message.content)
 
         # Send the response in chunks of 2000 characters due character limit
         i = 0
