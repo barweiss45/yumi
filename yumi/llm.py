@@ -7,10 +7,14 @@ from yumi.prompts.gen_prompts import base_instructions, basic_convo_prompt
 configs = Config()
 
 
-ell.init(verbose=True)
+ell.init(verbose=True, store="./logdir", autocommit=True)
 
 
-@ell.simple(model="gpt-4o-mini", client=openai.Client(api_key=configs.openai_api_key))
+@ell.simple(
+    model="gpt-4o-mini",
+    temperature=0.7,
+    client=openai.Client(api_key=configs.openai_api_key),
+)
 def baisc_conversation(query: str):
     """Basic conversation with GPT-4o-mini model."""
     return [

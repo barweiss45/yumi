@@ -1,5 +1,6 @@
 # Other file to ignore
 .vscode/
+yumi/logdir/
 
 # Ignore all documents in received files
 received_files/**
